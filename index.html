@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minimalistic UI</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+    }
+    .container {
+        max-width: 400px;
+        margin: 50px auto;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    }
+    label {
+        display: block;
+        margin-bottom: 10px;
+    }
+    input[type="text"], input[type="email"], select {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    }
+    button {
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+    button:hover {
+        background-color: #0056b3;
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <label>Select Environment:</label>
+    <div>
+        <input type="radio" id="radioStack" name="environment" value="stack" onclick="showDropdown('stack')"> Stack 
+        <input type="radio" id="radioPrestaging" name="environment" value="prestaging" onclick="showDropdown('prestaging')"> Prestaging
+        <input type="radio" id="radioProd" name="environment" value="prod" onclick="showDropdown('prod')"> Production
+    </div>
+    <div id="dropdownContainer" style="display: none;">
+        <label for="dropdownValues">Stack Name:</label>
+        <select id="dropdownValues">
+            <option value="Stack1">Stack1</option>
+            <option value="Stack2">Stack2</option>
+        </select>
+    </div>
+    <label for="accountDomain">Account Domain:</label>
+    <input type="text" id="accountDomain" name="accountDomain" required>
+    <label for="emailId">Email ID:</label>
+    <input type="email" id="emailId" name="emailId" required>
+    
+    <label>Select Group:</label>
+    <div>
+        <input type="radio" id="radioEsm" name="group" value="esm" checked> ESM
+        <input type="radio" id="radioNonEsm" name="group" value="non-esm"> Non-ESM
+        <input type="radio" id="radioEsmEssentials" name="group" value="esm-essentials"> ESM Essentials
+    </div>
+    <button onclick="fetchData()">Fetch Data</button>
+    <div id="response"></div>
+</div>
+
+<script>
+    function showDropdown(environment) {
+        const dropdownContainer = document.getElementById('dropdownContainer');
+        const dropdownValuesLabel = document.querySelector('label[for="dropdownValues"]');
+        const dropdownValuesSelect = document.getElementById('dropdownValues');
+
+        if (environment === 'stack') {
+            dropdownContainer.style.display = 'block';
+            dropdownValuesLabel.textContent = 'Stack Name:';
+            dropdownValuesSelect.innerHTML = `<option value="Stack1">Stack1</option><option value="Stack2">Stack2</option>`;
+        } else if (environment === 'prod') {
+            dropdownContainer.style.display = 'block';
+            dropdownValuesLabel.textContent = 'Region:';
+            dropdownValuesSelect.innerHTML = `<option value="AU">AU</option><option value="IND">IND</option><option value="US">US</option><option value="EUC">EUC</option>`;
+        } else {
+            dropdownContainer.style.display = 'none';
+        }
+    }
+
+    function fetchData() {
+        const accountDomain = document.getElementById('accountDomain').value.trim();
+        const account_name = accountDomain + "-name"
+        const emailId = document.getElementById('emailId').value.trim();
+        const env_selected = document.querySelector('input[name="environment"]:checked');
+        const account_type = document.querySelector('input[name="group"]:checked').value;
+        
+
+        if (!accountDomain || !emailId || !isValidEmail(emailId) || env_selected === null) {
+            alert('Please fill in all required fields with valid data.');
+            return;
+        }
+
+        var domain = document.getElementById('dropdownValues').value.trim();
+        const responseDiv = document.getElementById('response');
+        // Replace this with your actual API endpoint
+        
+
+        // Constructing the request body based on the selected environment
+        let requestBody = {
+                    "account": {
+                        "name": accountDomain + " - name",
+                        "domain": accountDomain
+                    },
+                    "utc_offset": "5.5",
+                    "user": {
+                        "email": emailId,
+                        "name": emailId
+                    },
+                    "ubx_enabled": true,
+                    "freshid_version": "V2"
+                }
+
+
+        if(account_type === "esm"){
+            requestBody["esm"] = true,
+            requestBody["cloud_type"] = {
+                "name": "ESM"
+            }
+        }
+        if(account_type === "esm-essentials"){
+            requestBody["esm_essentials_signup"] = true
+        }
+        var apiUrl = '';
+
+        if(env_selected.value === 'prestaging'){
+            apiUrl = "https://prestaging-esm-final.freshcmdb.com"
+        }else if(env_selected.value === 'prod'){
+            if (domain == 'US'){
+                apiUrl = "https://usinternalauto2.freshservice.com"
+            }else if(domain == 'IND'){apiUrl = "https://indinternalauto1.freshservice.com"}
+            else if (domain == 'AU'){ apiUrl = "https://auinternalauto1.freshservice.com"}
+                else {apiUrl  = "https://eucinternalauto1.freshservice.com"}
+        }
+
+
+        apiUrl += "/accounts/new_signup_free";
+
+        fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'origin': "https://indinternalauto1.freshservice.com",
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestBody),
+        })
+        .then(response => {
+            alert(JSON.stringify(response));
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.json(); // Parse JSON response
+        })
+        .then(data => {
+          // Process the JSON response
+          console.log(data);
+        })
+        .catch(error => {
+          // Handle errors
+          console.error('There was a problem with the fetch operation:', error);
+        });
+
+    }
+
+    function isValidEmail(email) {
+        // Simple email validation using a regular expression
+        const emailRegex = /\S+@\S+\.\S+/;
+        return emailRegex.test(email);
+    }
+</script>
+</body>
+</html>
