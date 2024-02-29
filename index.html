@@ -147,10 +147,11 @@
         apiUrl += "/accounts/new_signup_free";
 
         fetch(apiUrl, {
+            mode: 'no-cors',
           method: 'POST',
           headers: {
-            'origin': "https://indinternalauto1.freshservice.com",
             'Content-Type': 'application/json'
+              
           },
           body: JSON.stringify(requestBody),
         })
